@@ -29,6 +29,8 @@
  by Tom Igoe
  modified 22 Nov 2010
  by Tom Igoe
+ modified 20 Feb 2012
+ by Akafugu Corporation
  
  This example code is in the public domain.
 
@@ -36,9 +38,15 @@
  */
 
 // include the library code:
+// AKAFUGU: Important to include Wire.h before TWILiquidCrystal.h
 #include <Wire.h>
 #include <TWILiquidCrystal.h>
 
+// AKAFUGU: The TWILiquidCrystal library is backward compatible with
+// LiquidCrystal. Interface pins specified will be ignored. You can 
+// also initialize it with the TWI/I2C address:
+// LiquidCrystal lcd(0x32);
+//
 // initialize the library with the numbers of the interface pins
 LiquidCrystal lcd(12, 11, 5, 4, 3, 2);
 
