@@ -102,6 +102,13 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   // set the entry mode
   command(LCD_ENTRYMODESET | _displaymode);
 
+  Wire.beginTransmission(_addr);
+  Wire.write(0xfd); // Set cols/lines
+  Wire.write(cols);
+  Wire.write(lines);
+  Wire.endTransmission();
+  
+  delay(5);
 }
 
 /********** high level commands, for the user! */

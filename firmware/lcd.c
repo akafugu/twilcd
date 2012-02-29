@@ -568,7 +568,7 @@ else //lcd_lines == 2
 }/* lcd_init */
 
 
-void lcd_setup(uint8_t row, uint8_t col)
+void lcd_setup(uint8_t col, uint8_t row)
 {
 	if (lcd_lines != row)
 	{

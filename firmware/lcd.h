@@ -178,7 +178,7 @@
 */
 extern void lcd_init(uint8_t dispAttr);
 
-extern void lcd_setup(uint8_t row, uint8_t col);
+extern void lcd_setup(uint8_t col, uint8_t row);
 extern void lcd_linewrap(uint8_t on);
 extern void lcd_ks0073(uint8_t on);
 
