@@ -88,12 +88,14 @@ public:
   void setContrast(uint8_t);
   void testContrast(uint8_t);
   void setBrightness(uint8_t);
+  uint8_t getFirmwareVersion();
 private:
   void resetDisplay();
   void write_raw_data(uint8_t);
   uint8_t _displayfunction;
   uint8_t _displaycontrol;
   uint8_t _displaymode;
+  uint8_t _firmware_version;
   
   uint8_t _addr;
 };

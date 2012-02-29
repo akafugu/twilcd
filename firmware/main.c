@@ -27,7 +27,7 @@
 #include "max5160.h"
 #include "mcp4013.h"
 
-#define FIRMWARE_REVISION 1
+#define FIRMWARE_REVISION 2
 #define SLAVE_ADDRESS 0x32
 
 #ifndef DEFAULT_BRIGHTNESS

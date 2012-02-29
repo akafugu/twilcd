@@ -101,12 +101,18 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   _displaymode = LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT;
   // set the entry mode
   command(LCD_ENTRYMODESET | _displaymode);
-
-  Wire.beginTransmission(_addr);
-  Wire.write(0xfd); // Set cols/lines
-  Wire.write(cols);
-  Wire.write(lines);
-  Wire.endTransmission();
+  delay(5);
+  
+  _firmware_version = getFirmwareVersion();
+  
+  if(_firmware_version >= 2)
+  {
+	  Wire.beginTransmission(_addr);
+	  Wire.write(0xfd); // Set cols/lines
+	  Wire.write(cols);
+	  Wire.write(lines);
+	  Wire.endTransmission();
+  }
   
   delay(5);
 }
@@ -247,6 +253,18 @@ void LiquidCrystal::setBrightness(uint8_t value)
   Wire.write(0x80); // set brightness
   Wire.write(value);
   Wire.endTransmission();
+}
+
+
+uint8_t LiquidCrystal::getFirmwareVersion()
+{
+	uint8_t rdata = 0;
+	Wire.beginTransmission(_addr);
+	Wire.write(0x8a);
+	Wire.endTransmission();
+	Wire.requestFrom(_addr, (uint8_t)1);
+	if (Wire.available()) rdata = Wire.read();
+	return rdata;
 }
 
 /*********** mid level commands, for sending data/cmds */
