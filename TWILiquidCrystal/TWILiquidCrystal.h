@@ -85,8 +85,9 @@ public:
   virtual size_t write(uint8_t);
   void command(uint8_t);
   
+  void saveContrast(uint8_t);
   void setContrast(uint8_t);
-  void testContrast(uint8_t);
+  void saveBrightness(uint8_t);
   void setBrightness(uint8_t);
   uint8_t getFirmwareVersion();
 private:

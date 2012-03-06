@@ -22,7 +22,7 @@
 #include <inttypes.h>
 #include "Arduino.h"
 
-#define TWILCD_DEFAULT_ADDR 0x32
+#define TWILCD_DEFAULT_ADDR 50
 
 LiquidCrystal::LiquidCrystal(uint8_t addr)
 : _addr(addr)
@@ -231,30 +231,44 @@ void LiquidCrystal::createChar(uint8_t location, uint8_t charmap[]) {
 	Wire.endTransmission();
 }
 
-void LiquidCrystal::setContrast(uint8_t value)
+void LiquidCrystal::saveContrast(uint8_t value)
 {
   Wire.beginTransmission(_addr);
   Wire.write(0xd0); // set contrast
   Wire.write(value);
   Wire.endTransmission();
+  delay(5); // Wait for the device to activate the setting
 }
 
-void LiquidCrystal::testContrast(uint8_t value)
+void LiquidCrystal::setContrast(uint8_t value)
 {
   Wire.beginTransmission(_addr);
   Wire.write(0xd1); // set contrast
   Wire.write(value);
   Wire.endTransmission();
+  delay(5); // Wait for the device to activate the setting
 }
 
-void LiquidCrystal::setBrightness(uint8_t value)
+void LiquidCrystal::saveBrightness(uint8_t value)
 {
   Wire.beginTransmission(_addr);
   Wire.write(0x80); // set brightness
   Wire.write(value);
   Wire.endTransmission();
+  delay(5); // Wait for the device to activate the setting
 }
 
+void LiquidCrystal::setBrightness(uint8_t value)
+{
+  Wire.beginTransmission(_addr);
+  if(_firmware_version >= 3)
+	Wire.write(0xd3); // set brightness
+  else // Before version 3 there was only saveBrightness
+	Wire.write(0x80); // set brightness
+  Wire.write(value);
+  Wire.endTransmission();
+  delay(5); // Wait for the device to activate the setting
+}
 
 uint8_t LiquidCrystal::getFirmwareVersion()
 {

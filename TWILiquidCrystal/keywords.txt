@@ -31,9 +31,11 @@ scrollDisplayLeft       KEYWORD2
 scrollDisplayRight      KEYWORD2
 createChar      KEYWORD2
 
-setContrast		KEYWORD2
-testContrast	KEYWORD2
+saveContrast	KEYWORD2
+setContrast	KEYWORD2
+saveBrightness	KEYWORD2
 setBrightness	KEYWORD2
+getFirmwareVersion	KEYWORD2
 
 #######################################
 # Constants (LITERAL1)
