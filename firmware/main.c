@@ -27,8 +27,8 @@
 #include "max5160.h"
 #include "mcp4013.h"
 
-#define FIRMWARE_REVISION 2
-#define SLAVE_ADDRESS 0x32
+#define FIRMWARE_REVISION 3
+#define SLAVE_ADDRESS 50
 
 #ifndef DEFAULT_BRIGHTNESS
 #define DEFAULT_BRIGHTNESS 100
@@ -44,6 +44,8 @@ uint8_t EEMEM b_contrast = DEFAULT_CONTRAST;
 
 uint8_t displaycontrol;
 uint8_t displaymode;
+
+uint8_t currentcontrast = 0;
 
 /*
 ** constant definitions
@@ -84,7 +86,6 @@ void init(void)
 		stored_address = SLAVE_ADDRESS;
 	
 	usiTwiSlaveInit(stored_address);
-	//set_brightness(eeprom_read_byte(&b_brightness));
 
 	backlight_init();
 	
@@ -93,6 +94,10 @@ void init(void)
 #endif
 	
 	mcp4013_init();
+	
+	currentcontrast = eeprom_read_byte(&b_contrast);
+	
+	mcp4013_set(currentcontrast);
 	
 	sei(); // enable interrupts 
 }
@@ -104,7 +109,7 @@ void processTWI( void )
 	b = usiTwiReceiveByte();
 	
 	switch (b) {
-		case 0x80: // set brightness
+		case 0x80: // save brightness
 			c = usiTwiReceiveByte();
 			OCR0A = c;
 			eeprom_write_byte(&b_brightness, c);
@@ -243,14 +248,24 @@ void processTWI( void )
 			c = usiTwiReceiveByte();
 			lcd_data(c);
 			break;
-		case 0xd0: // Set new contrast
-			c = usiTwiReceiveByte();
-			mcp4013_set(c);
-			eeprom_write_byte(&b_contrast, c);
+		case 0xd0: // Save new contrast
+			currentcontrast = usiTwiReceiveByte();
+			mcp4013_set(currentcontrast);
+			eeprom_write_byte(&b_contrast, currentcontrast);
 			break;
-		case 0xd1: // Test contrast
-			c = usiTwiReceiveByte();		
-			mcp4013_set(c);
+		case 0xd1: // Set new contrast
+			currentcontrast = usiTwiReceiveByte();		
+			mcp4013_set(currentcontrast);
+			break;
+		case 0xd2: // Get contrast (Ver 3)
+			usiTwiTransmitByte(currentcontrast);
+			break;
+		case 0xd3: // Set new brightness (Ver 3)
+			c = usiTwiReceiveByte();
+			OCR0A = c;
+			break;
+		case 0xd4: // Get brightness (Ver 3)
+			usiTwiTransmitByte(OCR0A);
 			break;
 		case 0xfb: // Set line wrap
 			lcd_linewrap(usiTwiReceiveByte());
@@ -302,8 +317,6 @@ void main(void)
 	    max5160_dec();
     }
 #endif
-
-    mcp4013_set(eeprom_read_byte(&b_contrast));
     
 #ifdef FEATURE_SHOW_ADDRESS_ON_STARTUP
 	uint8_t counter = 0;
@@ -334,31 +347,4 @@ void main(void)
 			processTWI();
 		}
 	}
-
-
-    /*
-    while (1) {
-	    // go to min
-	    for (i = 0; i < 32; i++) {
-		    itoa( i , buffer, 10);
-		    lcd_clrscr();
-		    lcd_puts("Decrement: ");
-		    lcd_puts(buffer);
-
-		    max5160_dec();
-		    _delay_ms(500);
-	    }
-
-	    // go to max
-	    for (i = 0; i < 32; i++) {
-		    itoa( i , buffer, 10);
-		    lcd_clrscr();
-		    lcd_puts("Increment: ");
-		    lcd_puts(buffer);
-
-		    max5160_inc();
-		    _delay_ms(500);
-	    }
-    }
-    */
 }
