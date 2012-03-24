@@ -39,7 +39,7 @@
 #endif // DEFAULT_CONTRAST
 
 uint8_t EEMEM b_slave_address = SLAVE_ADDRESS;
-uint8_t EEMEM b_brightness = DEFAULT_BRIGHTNESS;
+uint8_t EEMEM b_brightness[3] = { DEFAULT_BRIGHTNESS, DEFAULT_BRIGHTNESS, DEFAULT_BRIGHTNESS };
 uint8_t EEMEM b_contrast = DEFAULT_CONTRAST;
 uint8_t EEMEM b_magic = 0xAF;
 
@@ -65,14 +65,17 @@ static const PROGMEM unsigned char copyRightChar[] =
 void backlight_init(void)
 {
 	// Set pin to output
-	DDRB |= _BV(PB2);
+	DDRB |= _BV(PB2) | _BV(PB3) | _BV(PB4);
 
 	// Get stored brightness
-	uint8_t stored_brightness = eeprom_read_byte(&b_brightness);
+	uint8_t stored_brightness = eeprom_read_byte(&b_brightness[0]);
 	if(safemode && stored_brightness > MAX_SAFE_BRIGHTNESS)
 		OCR0A = MAX_SAFE_BRIGHTNESS;
 	else
 		OCR0A = stored_brightness;
+	
+	OCR1A = eeprom_read_byte(&b_brightness[1]);
+	OCR1B = eeprom_read_byte(&b_brightness[2]);
 
 	// fast PWM, set OC0A (boost output pin) on match
 	TCCR0A = _BV(WGM00) | _BV(WGM01);  
@@ -80,7 +83,15 @@ void backlight_init(void)
 	// Use the fastest clock
 	TCCR0B = _BV(CS00);
 
+	// Clear on Compare match
 	TCCR0A |= _BV(COM0A1);
+	
+	// fast PWM 8-bit, No prescaling
+	TCCR1A = _BV(WGM10);
+	TCCR1B = _BV(CS10) | _BV(WGM12);
+	
+	// Clear on Compare match
+	TCCR1A |= _BV(COM1A1) | _BV(COM1B1);
 }
 
 void init(void)
@@ -126,7 +137,7 @@ void processTWI( void )
 			if(safemode && c > MAX_SAFE_BRIGHTNESS)
 				c = MAX_SAFE_BRIGHTNESS;
 			OCR0A = c;
-			eeprom_write_byte(&b_brightness, c);
+			eeprom_write_byte(&b_brightness[0], c);
 			break;
 #ifdef FEATURE_CHANGE_TWI_ADDRESS
 		case 0x81: // set slave address
@@ -285,15 +296,30 @@ void processTWI( void )
 			usiTwiTransmitByte(OCR0A);
 			break;
 		case 0xd5: // Save new RGB (Ver 4)
+			c = usiTwiReceiveByte();
+			if(safemode && c > MAX_SAFE_BRIGHTNESS)
+				OCR0A = MAX_SAFE_BRIGHTNESS;
+			else
+				OCR0A = c;
+			OCR1A = usiTwiReceiveByte();
+			OCR1B = usiTwiReceiveByte();
+			eeprom_write_byte(&b_brightness[0], OCR0A);
+			eeprom_write_byte(&b_brightness[1], OCR1A);
+			eeprom_write_byte(&b_brightness[2], OCR1B);
+			break;
 		case 0xd6: // Set new RGB (Ver 4)
-			usiTwiReceiveByte();
-			usiTwiReceiveByte();
-			usiTwiReceiveByte();
+			c = usiTwiReceiveByte();
+			if(safemode && c > MAX_SAFE_BRIGHTNESS)
+				OCR0A = MAX_SAFE_BRIGHTNESS;
+			else
+				OCR0A = c;
+			OCR1A = usiTwiReceiveByte();
+			OCR1B = usiTwiReceiveByte();
 			break;
 		case 0xd7: // Get RGB (Ver 4);
-			usiTwiTransmitByte(0x00);
-			usiTwiTransmitByte(0x00);
-			usiTwiTransmitByte(0x00);
+			usiTwiTransmitByte(OCR0A);
+			usiTwiTransmitByte(OCR1A);
+			usiTwiTransmitByte(OCR1B);
 			break;
 		case 0xf0: // Go out/in of safemode (Ver 4)
 			c = usiTwiReceiveByte();
