@@ -18,17 +18,13 @@
 
 #include <avr/io.h>
 
-#define CS_DDR  DDRB
-#define CS_PORT PORTB
-#define CS_BIT  PB4
+#define CS_DDR  DDRA
+#define CS_PORT PORTA
+#define CS_BIT  PA0
 
-#define INC_DDR  DDRB
-#define INC_PORT PORTB
-#define INC_BIT  PB3
-
-#define U_D_DDR  DDRB
-#define U_D_PORT PORTB
-#define U_D_BIT  PB1
+#define U_D_DDR  DDRA
+#define U_D_PORT PORTA
+#define U_D_BIT  PA1
 
 void mcp4013_init(void);
 void mcp4013_inc(void);
