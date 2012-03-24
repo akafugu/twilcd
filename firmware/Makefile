@@ -37,7 +37,7 @@ ifneq ($(CROSS), )
 endif
 
 ifneq ($(F_CPU),)
-  CFLAGS += -DF_CPU=$(F_CPU)
+  CFLAGS += -DF_CPU=$(F_CPU) -D__DELAY_BACKWARD_COMPATIBLE__
 endif
 
 ## Special defines
@@ -119,6 +119,9 @@ ifneq ($(AVRDUDE_PROGRAMMER), )
 endif
 ifneq ($(AVRDUDE_SPEED), )
   AVRDUDE_FLAGS += -b $(AVRDUDE_SPEED)
+endif
+ifneq ($(AVRDUDE_CONF), )
+  AVRDUDE_FLAGS += -b $(AVRDUDE_CONF)
 endif
 
 #Add more verbose output if we dont have SILENT set
