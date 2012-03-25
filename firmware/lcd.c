@@ -40,6 +40,9 @@
 #define lcd_e_high()    LCD_E_PORT  |=  _BV(LCD_E_PIN);
 #define lcd_e_low()     LCD_E_PORT  &= ~_BV(LCD_E_PIN);
 #define lcd_e_toggle()  toggle_e()
+#define lcd_e2_high()    LCD_E2_PORT  |=  _BV(LCD_E2_PIN);
+#define lcd_e2_low()     LCD_E2_PORT  &= ~_BV(LCD_E2_PIN);
+#define lcd_e2_toggle()  toggle_e2()
 #define lcd_rw_high()   LCD_RW_PORT |=  _BV(LCD_RW_PIN)
 #define lcd_rw_low()    LCD_RW_PORT &= ~_BV(LCD_RW_PIN)
 #define lcd_rs_high()   LCD_RS_PORT |=  _BV(LCD_RS_PIN)
@@ -50,6 +53,14 @@ uint8_t lcd_disp_length = 16;       /**< visibles characters per line of the dis
 uint8_t lcd_controller_ks0073 = 0;  /**< Use 0 for HD44780 controller, 1 for KS0073 controller */
 uint8_t lcd_wrap_lines = 0;         /**< 0: no wrap, 1: wrap at end of visibile line */
 
+struct lcd2CtrlMode {
+	char enable:1;
+	char line:2;
+} __attribute__((__packed__));
+
+struct lcd2CtrlMode mode;
+
+
 #define KS0073_EXTENDED_FUNCTION_REGISTER_ON  0x24   /* |0|010|0100 4-bit mode extension-bit RE = 1 */
 #define KS0073_EXTENDED_FUNCTION_REGISTER_OFF 0x20   /* |0|000|1001 4 lines mode */
 #define KS0073_4LINES_MODE                    0x09   /* |0|001|0000 4-bit mode, extension-bit RE = 0 */
@@ -59,6 +70,7 @@ uint8_t lcd_wrap_lines = 0;         /**< 0: no wrap, 1: wrap at end of visibile 
 ** function prototypes 
 */
 static void toggle_e(void);
+static void toggle_e2(void);
 
 /*
 ** local functions
@@ -95,6 +107,13 @@ static void toggle_e(void)
     lcd_e_high();
     lcd_e_delay();
     lcd_e_low();
+}
+
+static void toggle_e2(void)
+{
+    lcd_e2_high();
+    lcd_e_delay();
+    lcd_e2_low();
 }
 
 
@@ -173,6 +192,34 @@ static void lcd_write(uint8_t data,uint8_t rs)
     }
 }
 
+static void lcd_write2(uint8_t data,uint8_t rs) 
+{
+    unsigned char dataBits ;
+
+
+    if (rs) {   /* write data        (RS=1, RW=0) */
+       lcd_rs_high();
+    } else {    /* write instruction (RS=0, RW=0) */
+       lcd_rs_low();
+    }
+    lcd_rw_low();
+
+    /* configure data pins as output */
+    DDR(LCD_DATA0_PORT) |= 0x0F;
+
+    /* output high nibble first */
+    dataBits = LCD_DATA0_PORT & 0xF0;
+    LCD_DATA0_PORT = dataBits |((data>>4)&0x0F);
+    lcd_e2_toggle();
+
+    /* output low nibble */
+    LCD_DATA0_PORT = dataBits | (data&0x0F);
+    lcd_e2_toggle();
+
+    /* all data pins high (inactive) */
+    LCD_DATA0_PORT = dataBits | 0x0F;
+}
+
 /*************************************************************************
 Low-level function to read byte from LCD controller
 Input:    rs     1: read data    
@@ -239,12 +286,38 @@ static uint8_t lcd_read(uint8_t rs)
     return data;
 }
 
+static uint8_t lcd_read2(uint8_t rs) 
+{
+    uint8_t data;
+    
+    if (rs)
+        lcd_rs_high();                       /* RS=1: read data      */
+    else
+        lcd_rs_low();                        /* RS=0: read busy flag */
+    lcd_rw_high();                           /* RW=1  read mode      */
+    
+
+	DDR(LCD_DATA0_PORT) &= 0xF0;         /* configure data pins as input */
+	
+	lcd_e2_high();
+	lcd_e_delay();        
+	data = PIN(LCD_DATA0_PORT) << 4;     /* read high nibble first */
+	lcd_e2_low();
+	
+	lcd_e_delay();                       /* Enable 500ns low       */
+	
+	lcd_e2_high();
+	lcd_e_delay();
+	data |= PIN(LCD_DATA0_PORT)&0x0F;    /* read low nibble        */
+	lcd_e2_low();
+    
+    return data;
+}
 
 /*************************************************************************
 loops while lcd is busy, returns address counter
 *************************************************************************/
 static uint8_t lcd_waitbusy(void)
-
 {
     register uint8_t c;
     
@@ -257,7 +330,24 @@ static uint8_t lcd_waitbusy(void)
     /* now read the address counter */
     return (lcd_read(0));  // return address counter
     
-}/* lcd_waitbusy */
+}
+
+static uint8_t lcd_waitbusy2(void)
+{
+    register uint8_t c;
+    
+    /* wait until busy flag is cleared */
+    while ( (c=lcd_read2(0)) & (1<<LCD_BUSY)) {}
+    
+    /* the address counter is updated 4us after the busy flag is cleared */
+    delay(2);
+
+    /* now read the address counter */
+    return (lcd_read2(0));  // return address counter
+    
+}
+
+/* lcd_waitbusy */
 
 
 /*************************************************************************
@@ -321,6 +411,11 @@ void lcd_command(uint8_t cmd)
     lcd_write(cmd,0);
 }
 
+void lcd_command2(uint8_t cmd)
+{
+    lcd_waitbusy2();
+    lcd_write2(cmd,0);
+}
 
 /*************************************************************************
 Send data byte to LCD controller 
@@ -333,7 +428,11 @@ void lcd_data(uint8_t data)
     lcd_write(data,1);
 }
 
-
+void lcd_data2(uint8_t data)
+{
+    lcd_waitbusy2();
+    lcd_write2(data,1);
+}
 
 /*************************************************************************
 Set cursor to specified position
@@ -380,6 +479,8 @@ Clear display and set cursor to home position
 void lcd_clrscr(void)
 {
     lcd_command(1<<LCD_CLR);
+    if(mode.enable);
+        lcd_command2(1<<LCD_CLR);
 }
 
 
@@ -504,6 +605,7 @@ void lcd_init(uint8_t dispAttr)
     {
         /* configure all port bits as output (all LCD lines on same port) */
         DDR(LCD_DATA0_PORT) |= 0x7F;
+        DDR(LCD_E2_PORT)    |= _BV(LCD_E2_PIN);
     }
     else if ( ( &LCD_DATA0_PORT == &LCD_DATA1_PORT) && ( &LCD_DATA1_PORT == &LCD_DATA2_PORT ) && ( &LCD_DATA2_PORT == &LCD_DATA3_PORT )
            && (LCD_DATA0_PIN == 0 ) && (LCD_DATA1_PIN == 1) && (LCD_DATA2_PIN == 2) && (LCD_DATA3_PIN == 3) )
@@ -513,6 +615,7 @@ void lcd_init(uint8_t dispAttr)
         DDR(LCD_RS_PORT)    |= _BV(LCD_RS_PIN);
         DDR(LCD_RW_PORT)    |= _BV(LCD_RW_PIN);
         DDR(LCD_E_PORT)     |= _BV(LCD_E_PIN);
+        DDR(LCD_E2_PORT)    |= _BV(LCD_E2_PIN);
     }
     else
     {
@@ -520,6 +623,7 @@ void lcd_init(uint8_t dispAttr)
         DDR(LCD_RS_PORT)    |= _BV(LCD_RS_PIN);
         DDR(LCD_RW_PORT)    |= _BV(LCD_RW_PIN);
         DDR(LCD_E_PORT)     |= _BV(LCD_E_PIN);
+        DDR(LCD_E2_PORT)    |= _BV(LCD_E2_PIN);
         DDR(LCD_DATA0_PORT) |= _BV(LCD_DATA0_PIN);
         DDR(LCD_DATA1_PORT) |= _BV(LCD_DATA1_PIN);
         DDR(LCD_DATA2_PORT) |= _BV(LCD_DATA2_PIN);
@@ -564,6 +668,8 @@ else //lcd_lines == 2
     lcd_clrscr();                           /* display clear                */ 
     lcd_command(LCD_MODE_DEFAULT);          /* set entry mode               */
     lcd_command(dispAttr);                  /* display/cursor control       */
+    lcd_command2(LCD_FUNCTION_4BIT_2LINES);
+    lcd_command2(LCD_DISP_OFF);		// Turn off dispaly2 in case we have one.
 
 }/* lcd_init */
 
@@ -587,6 +693,19 @@ void lcd_setup(uint8_t col, uint8_t row)
 	}
 	if (lcd_disp_length != col)
 		lcd_disp_length = col;
+
+	if (lcd_lines == 4 && lcd_disp_length == 40)
+	{
+		mode.enable = 1;
+		mode.line = 0;
+		lcd_command2(LCD_FUNCTION_4BIT_2LINES);
+		lcd_command2(LCD_DISP_OFF);
+		lcd_clrscr(); 
+		lcd_command2(LCD_MODE_DEFAULT);
+		lcd_command2(LCD_DISPLAYCONTROL | LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF);
+	}
+	else
+		mode.enable = 0;
 }
 
 void lcd_linewrap(uint8_t on)

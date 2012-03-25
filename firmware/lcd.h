@@ -89,6 +89,8 @@
 #define LCD_RW_PIN       5            /**< pin  for RW line         */
 #define LCD_E_PORT       LCD_PORT     /**< port for Enable line     */
 #define LCD_E_PIN        6            /**< pin  for Enable line     */
+#define LCD_E2_PORT      PORTB        /**< port for Enable2 line     */
+#define LCD_E2_PIN       0            /**< pin  for Enable2 line     */
 
 /**
  *  @name Definitions for LCD command instructions
