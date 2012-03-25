@@ -270,6 +270,33 @@ void LiquidCrystal::setBrightness(uint8_t value)
   delay(5); // Wait for the device to activate the setting
 }
 
+void LiquidCrystal::saveColor(uint8_t R, uint8_t G, uint8_t B)
+{
+  if(_firmware_version >= 4)
+  {
+    Wire.beginTransmission(_addr);
+    Wire.write(0xd5); // save RGB
+    Wire.write(R);
+    Wire.write(G);
+    Wire.write(B);
+    Wire.endTransmission();
+    delay(5); // Wait for the eeprom to be written
+  }
+}
+
+void LiquidCrystal::setColor(uint8_t R, uint8_t G, uint8_t B)
+{
+  if(_firmware_version >= 4)
+  {
+    Wire.beginTransmission(_addr);
+    Wire.write(0xd6); // set RGB
+    Wire.write(R);
+    Wire.write(G);
+    Wire.write(B);
+    Wire.endTransmission();
+  }
+}
+
 uint8_t LiquidCrystal::getFirmwareVersion()
 {
 	uint8_t rdata = 0;
