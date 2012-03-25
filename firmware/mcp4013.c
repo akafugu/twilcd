@@ -48,7 +48,6 @@ void mcp4013_inc(void)
 	_delay_us(2);
 
 	// disable chip
-	sbi(INC_PORT, INC_BIT);
 	sbi(U_D_PORT, U_D_BIT);
 	sbi(CS_PORT, CS_BIT);
 	//_delay_ms(50);
@@ -65,7 +64,6 @@ void mcp4013_dec(void)
 	_delay_us(2);
 
 	// disable chip
-	sbi(INC_PORT, INC_BIT);
 	sbi(U_D_PORT, U_D_BIT);
 	sbi(CS_PORT, CS_BIT);
 	//_delay_ms(50);

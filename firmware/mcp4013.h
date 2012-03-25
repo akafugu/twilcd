@@ -22,10 +22,6 @@
 #define CS_PORT PORTB
 #define CS_BIT  PB4
 
-#define INC_DDR  DDRB
-#define INC_PORT PORTB
-#define INC_BIT  PB3
-
 #define U_D_DDR  DDRB
 #define U_D_PORT PORTB
 #define U_D_BIT  PB1
