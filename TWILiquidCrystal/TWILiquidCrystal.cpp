@@ -76,6 +76,7 @@ void LiquidCrystal::resetDisplay()
 void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   _displayfunction = LCD_4BITMODE | LCD_1LINE | LCD_5x8DOTS;
   Wire.begin();
+  delay(200);
   
   resetDisplay();
   if (lines > 1) {
@@ -220,6 +221,7 @@ void LiquidCrystal::noAutoscroll(void) {
 // Allows us to fill the first 8 CGRAM locations
 // with custom characters
 void LiquidCrystal::createChar(uint8_t location, uint8_t charmap[]) {
+	delay(5);
 	Wire.begin();
 	Wire.beginTransmission(_addr);
 	Wire.write(0x9f); // create custom character
@@ -229,6 +231,7 @@ void LiquidCrystal::createChar(uint8_t location, uint8_t charmap[]) {
 		Wire.write(charmap[i]);
 	
 	Wire.endTransmission();
+	delay(25);
 }
 
 void LiquidCrystal::saveContrast(uint8_t value)

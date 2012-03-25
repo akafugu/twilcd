@@ -128,6 +128,7 @@ void init(void)
 void processTWI( void )
 {
 	uint8_t b,c,d;
+	uint8_t tmp_data[8];
 
 	b = usiTwiReceiveByte();
 	
@@ -247,13 +248,13 @@ void processTWI( void )
 			break;
 		case 0x9f: // create custom character
 			c = usiTwiReceiveByte() & 0x7; // locations are from 0~7
-			lcd_command(_BV(LCD_CGRAM) | (c<<3)); // set CG RAM start address
 
 			for(uint8_t i = 0; i < 8; i++) {
-				lcd_data(usiTwiReceiveByte());
+				tmp_data[i] = usiTwiReceiveByte();
 			}
-			break;
 			
+			lcd_createCharacter(c, tmp_data);
+			break;
 
 		/* LCD commands */
 		

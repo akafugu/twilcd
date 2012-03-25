@@ -54,11 +54,11 @@ uint8_t lcd_controller_ks0073 = 0;  /**< Use 0 for HD44780 controller, 1 for KS0
 uint8_t lcd_wrap_lines = 0;         /**< 0: no wrap, 1: wrap at end of visibile line */
 
 struct lcd2CtrlMode {
-	char enable:1;
-	char display:1;
+	uint8_t enable:1;
+	uint8_t display:1;
 } __attribute__((__packed__));
 
-struct lcd2CtrlMode mode;
+volatile struct lcd2CtrlMode mode;
 
 
 #define KS0073_EXTENDED_FUNCTION_REGISTER_ON  0x24   /* |0|010|0100 4-bit mode extension-bit RE = 1 */
@@ -530,8 +530,8 @@ Clear display and set cursor to home position
 void lcd_clrscr(void)
 {
     lcd_command(1<<LCD_CLR);
-    if(mode.enable);
-        lcd_command2(1<<LCD_CLR);
+    if(mode.enable)
+        lcd_write2(1<<LCD_CLR,0);
     mode.display = 0;
 }
 
@@ -736,26 +736,30 @@ void lcd_init(uint8_t dispAttr)
     
     /* from now the LCD only accepts 4 bit I/O, we can use lcd_command() */    
 
-if (lcd_lines == 4 && lcd_controller_ks0073)
-{
-    /* Display with KS0073 controller requires special commands for enabling 4 line mode */
-	lcd_command(KS0073_EXTENDED_FUNCTION_REGISTER_ON);
-	lcd_command(KS0073_4LINES_MODE);
-	lcd_command(KS0073_EXTENDED_FUNCTION_REGISTER_OFF);
-}
-else if (lcd_lines == 1)
-    lcd_command(LCD_FUNCTION_4BIT_1LINE);      /* function set: display lines  */
-else //lcd_lines == 2
-	lcd_command(LCD_FUNCTION_4BIT_2LINES);
+	if (lcd_lines == 4 && lcd_controller_ks0073)
+	{
+		/* Display with KS0073 controller requires special commands for enabling 4 line mode */
+		lcd_command(KS0073_EXTENDED_FUNCTION_REGISTER_ON);
+		lcd_command(KS0073_4LINES_MODE);
+		lcd_command(KS0073_EXTENDED_FUNCTION_REGISTER_OFF);
+	}
+	else if (lcd_lines == 1)
+		lcd_command(LCD_FUNCTION_4BIT_1LINE);      /* function set: display lines  */
+	else //lcd_lines == 2
+		lcd_command(LCD_FUNCTION_4BIT_2LINES);
 
     lcd_command(LCD_DISP_OFF);              /* display off                  */
     lcd_clrscr();                           /* display clear                */ 
     lcd_command(LCD_MODE_DEFAULT);          /* set entry mode               */
     lcd_command(dispAttr);                  /* display/cursor control       */
+    
+    // Clear out the second display.
+    // As we don't know if we have a second display we can not use lcd_command2
+    delay(64);
     lcd_write2(LCD_FUNCTION_4BIT_2LINES,0);
-    delay(5);
+    delay(64);
     lcd_write2(LCD_DISP_OFF,0);		// Turn off dispaly2 in case we have one.
-    delay(5);
+    delay(64);
 
 }/* lcd_init */
 
@@ -808,5 +812,17 @@ void lcd_ks0073(uint8_t on)
 		lcd_command(KS0073_EXTENDED_FUNCTION_REGISTER_ON);
 		lcd_command(KS0073_4LINES_MODE);
 		lcd_command(KS0073_EXTENDED_FUNCTION_REGISTER_OFF);
+	}
+}
+
+void lcd_createCharacter(uint8_t pos, uint8_t *data)
+{
+	lcd_command(_BV(LCD_CGRAM) | (pos<<3)); // set CG RAM start address
+	lcd_write2(_BV(LCD_CGRAM) | (pos<<3), 0);
+
+	for(uint8_t i = 0; i < 8; i++) {
+		lcd_data(data[i]);
+		delay(10);
+		lcd_write2(data[i],1);
 	}
 }

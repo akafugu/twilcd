@@ -184,6 +184,8 @@ extern void lcd_setup(uint8_t col, uint8_t row);
 extern void lcd_linewrap(uint8_t on);
 extern void lcd_ks0073(uint8_t on);
 
+extern void lcd_createCharacter(uint8_t pos, uint8_t *data);
+
 /**
  @brief    Clear display and set cursor to home position
  @param    void                                        
