@@ -41,13 +41,17 @@
 uint8_t EEMEM b_slave_address = SLAVE_ADDRESS;
 uint8_t EEMEM b_brightness = DEFAULT_BRIGHTNESS;
 uint8_t EEMEM b_contrast = DEFAULT_CONTRAST;
-uint8_t EEMEM b_magic = 0xAF;
+#ifdef FEATURE_SAFEMODE
+uint8_t EEMEM b_magic = 0x00;
+#endif // FEATURE_SAFEMODE
 
 uint8_t displaycontrol;
 uint8_t displaymode;
 
+#ifdef FEATURE_SAFEMODE
 #define MAX_SAFE_BRIGHTNESS	200
 bool safemode = true;
+#endif // FEATURE_SAFEMODE
 
 uint8_t currentcontrast = 0;
 
@@ -69,9 +73,11 @@ void backlight_init(void)
 
 	// Get stored brightness
 	uint8_t stored_brightness = eeprom_read_byte(&b_brightness);
+#ifdef FEATURE_SAFEMODE
 	if(safemode && stored_brightness > MAX_SAFE_BRIGHTNESS)
 		OCR0A = MAX_SAFE_BRIGHTNESS;
 	else
+#endif // FEATURE_SAFEMODE
 		OCR0A = stored_brightness;
 
 	// fast PWM, set OC0A (boost output pin) on match
@@ -94,10 +100,12 @@ void init(void)
 	
 	usiTwiSlaveInit(stored_address);
 
+#ifdef FEATURE_SAFEMODE
 	uint8_t magic = eeprom_read_byte(&b_magic);
 	// Check if magic is set, then go out of safemode
 	if ( magic == 0xAF )
 		safemode = false;
+#endif // FEATURE_SAFEMODE
 	
 	backlight_init();
 	
@@ -123,8 +131,10 @@ void processTWI( void )
 	switch (b) {
 		case 0x80: // save brightness
 			c = usiTwiReceiveByte();
+#ifdef FEATURE_SAFEMODE
 			if(safemode && c > MAX_SAFE_BRIGHTNESS)
 				c = MAX_SAFE_BRIGHTNESS;
+#endif // FEATURE_SAFEMODE
 			OCR0A = c;
 			eeprom_write_byte(&b_brightness, c);
 			break;
@@ -276,9 +286,11 @@ void processTWI( void )
 			break;
 		case 0xd3: // Set new brightness (Ver 3)
 			c = usiTwiReceiveByte();
+#ifdef FEATURE_SAFEMODE
 			if(safemode && c > MAX_SAFE_BRIGHTNESS)
 				OCR0A = MAX_SAFE_BRIGHTNESS;
 			else
+#endif // FEATURE_SAFEMODE
 				OCR0A = c;
 			break;
 		case 0xd4: // Get brightness (Ver 3)
@@ -287,9 +299,11 @@ void processTWI( void )
 		case 0xd5: // Save new RGB (Ver 4)
 		case 0xd6: // Set new RGB (Ver 4)
 			c = usiTwiReceiveByte();
+#ifdef FEATURE_SAFEMODE
 			if(safemode && c > MAX_SAFE_BRIGHTNESS)
 				OCR0A = MAX_SAFE_BRIGHTNESS;
 			else
+#endif // FEATURE_SAFEMODE
 				OCR0A = c;
 			usiTwiReceiveByte();
 			usiTwiReceiveByte();
@@ -302,6 +316,7 @@ void processTWI( void )
 		case 0xf0: // Go out/in of safemode (Ver 4)
 			c = usiTwiReceiveByte();
 			d = usiTwiReceiveByte();
+#ifdef FEATURE_SAFEMODE
 			if ( c == 0xAF && d == 0x0F) // Disable safemode
 			{
 				safemode = false;
@@ -312,6 +327,7 @@ void processTWI( void )
 				safemode = true;
 				eeprom_write_byte(&b_magic, 0x00);
 			}
+#endif // FEATURE_SAFEMODE
 			break;
 		case 0xfb: // Set line wrap
 			lcd_linewrap(usiTwiReceiveByte());
