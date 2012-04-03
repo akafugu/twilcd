@@ -35,6 +35,8 @@ saveContrast	KEYWORD2
 setContrast	KEYWORD2
 saveBrightness	KEYWORD2
 setBrightness	KEYWORD2
+saveColor		KEYWORD2
+setColor		KEYWORD2
 getFirmwareVersion	KEYWORD2
 
 #######################################

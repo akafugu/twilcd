@@ -89,6 +89,8 @@ public:
   void setContrast(uint8_t);
   void saveBrightness(uint8_t);
   void setBrightness(uint8_t);
+  void saveColor(uint8_t, uint8_t, uint8_t);
+  void setColor(uint8_t, uint8_t, uint8_t);
   uint8_t getFirmwareVersion();
 private:
   void resetDisplay();
