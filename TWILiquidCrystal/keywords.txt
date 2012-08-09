@@ -13,6 +13,7 @@ TWILiquidCrystal   KEYWORD1
 #######################################
 
 begin   KEYWORD2
+changeAddress KEYWORD2
 clear   KEYWORD2
 home    KEYWORD2
 print   KEYWORD2

@@ -63,6 +63,7 @@ public:
 		uint8_t d0, uint8_t d1, uint8_t d2, uint8_t d3);
     
   void begin(uint8_t cols, uint8_t rows, uint8_t charsize = LCD_5x8DOTS);
+  void changeAddress(int new_addr);
 
   void clear();
   void home();

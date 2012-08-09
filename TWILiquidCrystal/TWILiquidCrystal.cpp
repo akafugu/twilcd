@@ -97,6 +97,7 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 
   // clear it off
   clear();
+  home();
 
   // Initialize to default text direction (for romance languages)
   _displaymode = LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT;
@@ -119,6 +120,14 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 }
 
 /********** high level commands, for the user! */
+void LiquidCrystal::changeAddress(int new_addr)
+{
+        Wire.beginTransmission(_addr);
+        Wire.write(0x81); // change address
+        Wire.write(new_addr);
+        Wire.endTransmission();
+}
+
 void LiquidCrystal::clear()
 {
   Wire.beginTransmission(_addr);
@@ -129,7 +138,7 @@ void LiquidCrystal::clear()
 void LiquidCrystal::home()
 {
   Wire.beginTransmission(_addr);
-  Wire.write(0x91); // clearscr
+  Wire.write(0x91); // home 
   Wire.endTransmission();
 }
 
