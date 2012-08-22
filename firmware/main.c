@@ -35,7 +35,7 @@
 #endif // DEFAULT_BRIGHTNESS
 
 #ifndef DEFAULT_CONTRAST
-#define DEFAULT_CONTRAST 40
+#define DEFAULT_CONTRAST 12
 #endif // DEFAULT_CONTRAST
 
 uint8_t EEMEM b_slave_address = SLAVE_ADDRESS;
