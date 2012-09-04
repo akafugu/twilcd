@@ -103,7 +103,7 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
   _displaymode = LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT;
   // set the entry mode
   command(LCD_ENTRYMODESET | _displaymode);
-  delay(5);
+  delay(50); // OLED needs some more time to initialize
   
   _firmware_version = getFirmwareVersion();
   
@@ -116,7 +116,7 @@ void LiquidCrystal::begin(uint8_t cols, uint8_t lines, uint8_t dotsize) {
 	  Wire.endTransmission();
   }
   
-  delay(5);
+  delay(50);
 }
 
 /********** high level commands, for the user! */
