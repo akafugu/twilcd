@@ -178,11 +178,20 @@
                     \b LCD_DISP_ON_CURSOR_BLINK display on, cursor on flashing             
  @return  none
 */
-extern void lcd_init(uint8_t dispAttr);
+extern void lcd_init(void);
 
 extern void lcd_setup(uint8_t col, uint8_t row);
 extern void lcd_linewrap(uint8_t on);
 extern void lcd_ks0073(uint8_t on);
+
+extern void lcd_displayon(uint8_t on);
+extern void lcd_blink(uint8_t on);
+extern void lcd_cursor(uint8_t on);
+
+extern void lcd_scroll_right(void);
+extern void lcd_scroll_left(void);
+
+extern void lcd_setmode(uint8_t displaymode);
 
 extern void lcd_createCharacter(uint8_t pos, uint8_t *data);
 

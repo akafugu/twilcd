@@ -53,9 +53,16 @@ uint8_t lcd_disp_length = 16;       /**< visibles characters per line of the dis
 uint8_t lcd_controller_ks0073 = 0;  /**< Use 0 for HD44780 controller, 1 for KS0073 controller */
 uint8_t lcd_wrap_lines = 0;         /**< 0: no wrap, 1: wrap at end of visibile line */
 
+// initialize display control: display on, cursor off, blink off
+uint8_t displaycontrol = LCD_DISPLAYCONTROL | LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF;
+uint8_t active_displaycontrol = LCD_DISPLAYCONTROL | LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF;
+
+
 struct lcd2CtrlMode {
 	uint8_t enable:1;
 	uint8_t display:1;
+	uint8_t cursor:1;
+	uint8_t blink:1;
 } __attribute__((__packed__));
 
 volatile struct lcd2CtrlMode mode;
@@ -402,6 +409,8 @@ static inline void lcd_newline(uint8_t pos)
     		{
     			addressCounter = LCD_START_LINE1;
     			mode.display = 1;
+    			lcd_command(displaycontrol);
+    			lcd_command2(active_displaycontrol);
     		}
     	}
     	else
@@ -411,7 +420,9 @@ static inline void lcd_newline(uint8_t pos)
     		else
     		{
     			addressCounter = LCD_START_LINE1;
-    			mode.display = 1;
+    			mode.display = 0;
+    			lcd_command(active_displaycontrol);
+    			lcd_command2(displaycontrol);
     		}
     	}
     	if (mode.display == 0)
@@ -476,21 +487,29 @@ void lcd_gotoxy(uint8_t x, uint8_t y)
 		{
 			lcd_command((1<<LCD_DDRAM)+LCD_START_LINE1+x);
 			mode.display = 0;
+			lcd_command(active_displaycontrol);
+			lcd_command2(displaycontrol);
 		}
 		else if ( y==1)
 		{
 			lcd_command((1<<LCD_DDRAM)+LCD_START_LINE2+x);
 			mode.display = 0;
+			lcd_command(active_displaycontrol);
+			lcd_command2(displaycontrol);
 		}
 		else if ( y==2)
 		{
 			lcd_command2((1<<LCD_DDRAM)+LCD_START_LINE1+x);
 			mode.display = 1;
+			lcd_command(displaycontrol);
+			lcd_command2(active_displaycontrol);
 		}
 		else /* y==3 */
 		{
 			lcd_command2((1<<LCD_DDRAM)+LCD_START_LINE2+x);
 			mode.display = 1;
+			lcd_command(displaycontrol);
+			lcd_command2(active_displaycontrol);
 		}
 	}
 	else if (lcd_lines == 1)
@@ -533,6 +552,8 @@ void lcd_clrscr(void)
     if(mode.enable)
         lcd_write2(1<<LCD_CLR,0);
     mode.display = 0;
+	lcd_command(active_displaycontrol);
+	lcd_command2(displaycontrol);
 }
 
 
@@ -543,6 +564,8 @@ void lcd_home(void)
 {
     lcd_command(1<<LCD_HOME);
     mode.display = 0;
+	lcd_command(active_displaycontrol);
+	lcd_command2(displaycontrol);
 }
 
 
@@ -580,6 +603,8 @@ void lcd_putc(char c)
         			}else if ( pos == LCD_START_LINE2+lcd_disp_length ){
         				lcd_write2((1<<LCD_DDRAM)+LCD_START_LINE1,0);
         				mode.display = 1;
+            			lcd_command(displaycontrol);
+            			lcd_command2(active_displaycontrol);
         			}
     			}
     			else
@@ -589,6 +614,8 @@ void lcd_putc(char c)
         			}else if ( pos == LCD_START_LINE2+lcd_disp_length ){
         				lcd_write((1<<LCD_DDRAM)+LCD_START_LINE1,0);
         				mode.display = 0;
+            			lcd_command(active_displaycontrol);
+            			lcd_command2(displaycontrol);
         			}
     			}
     		}
@@ -674,7 +701,7 @@ Input:    dispAttr LCD_DISP_OFF            display off
                    LCD_DISP_CURSOR_BLINK   display on, cursor on flashing
 Returns:  none
 *************************************************************************/
-void lcd_init(uint8_t dispAttr)
+void lcd_init(void)
 {
 	mode.enable = 0;
 	mode.display = 0;
@@ -751,7 +778,7 @@ void lcd_init(uint8_t dispAttr)
     lcd_command(LCD_DISP_OFF);              /* display off                  */
     lcd_clrscr();                           /* display clear                */ 
     lcd_command(LCD_MODE_DEFAULT);          /* set entry mode               */
-    lcd_command(dispAttr);                  /* display/cursor control       */
+    lcd_command(displaycontrol);                  /* display/cursor control       */
     
     // Clear out the second display.
     // As we don't know if we have a second display we can not use lcd_command2
@@ -825,4 +852,76 @@ void lcd_createCharacter(uint8_t pos, uint8_t *data)
 		delay(10);
 		lcd_write2(data[i],1);
 	}
+}
+
+
+void lcd_displayon(uint8_t on)
+{
+	if(on) {
+		displaycontrol |= LCD_DISPLAYON;
+	} else {
+		displaycontrol &= ~LCD_DISPLAYON;
+	}
+	
+	lcd_command(displaycontrol);
+	if(mode.enable)
+		lcd_command2(displaycontrol);
+}
+
+void lcd_blink(uint8_t on)
+{
+	mode.blink = on;
+	if(!on) {
+		active_displaycontrol &= ~LCD_BLINKON;
+		if(mode.enable && mode.display)
+			lcd_command2(active_displaycontrol);
+		else
+			lcd_command(active_displaycontrol);
+	} else {
+		active_displaycontrol |= LCD_BLINKON;
+		if(mode.enable && mode.display == 1)
+			lcd_command2(active_displaycontrol);
+		else
+			lcd_command(active_displaycontrol);
+	}
+}
+
+void lcd_cursor(uint8_t on)
+{
+	mode.cursor = on;
+	if(!on) {
+		active_displaycontrol &= ~LCD_CURSORON;
+		if(mode.enable && mode.display)
+			lcd_command2(active_displaycontrol);
+		else
+			lcd_command(active_displaycontrol);
+	} else {
+		active_displaycontrol |= LCD_CURSORON;
+		if(mode.enable && mode.display == 1)
+			lcd_command2(active_displaycontrol);
+		else
+			lcd_command(active_displaycontrol);
+	}
+}
+
+
+void lcd_scroll_right(void)
+{
+	lcd_command(LCD_MOVE_DISP_RIGHT);
+	if(mode.enable)
+		lcd_command2(LCD_MOVE_DISP_RIGHT);
+}
+
+void lcd_scroll_left(void)
+{
+	lcd_command(LCD_MOVE_DISP_LEFT);
+	if(mode.enable)
+		lcd_command2(LCD_MOVE_DISP_LEFT);
+}
+
+void lcd_setmode(uint8_t displaymode)
+{
+	lcd_command(displaymode);
+	if(mode.enable)
+		lcd_command2(displaymode);
 }

@@ -27,7 +27,7 @@
 #include "max5160.h"
 #include "mcp4013.h"
 
-#define FIRMWARE_REVISION 4
+#define FIRMWARE_REVISION 5
 #define SLAVE_ADDRESS 50
 
 #ifndef DEFAULT_BRIGHTNESS
@@ -43,7 +43,6 @@ uint8_t EEMEM b_brightness[3] = { DEFAULT_BRIGHTNESS, DEFAULT_BRIGHTNESS, DEFAUL
 uint8_t EEMEM b_contrast = DEFAULT_CONTRAST;
 uint8_t EEMEM b_magic = 0xAF;
 
-uint8_t displaycontrol;
 uint8_t displaymode;
 
 #define MAX_SAFE_BRIGHTNESS	200
@@ -201,50 +200,44 @@ void processTWI( void )
 			break;
 		/* Low level commands */
 		case 0x93: // Display off
-			displaycontrol &= ~LCD_DISPLAYON;
-			lcd_command(displaycontrol);
+			lcd_displayon(0);
 			break;
 		case 0x94: // Display on
-			displaycontrol |= LCD_DISPLAYON;
-			lcd_command(displaycontrol);
+			lcd_displayon(1);
 			break;
 		case 0x95: // Cursor off
-			displaycontrol &= ~LCD_CURSORON;
-			lcd_command(displaycontrol);
+			lcd_cursor(0);
 			break;
 		case 0x96: // Cursor on
-			displaycontrol |= LCD_CURSORON;
-			lcd_command(displaycontrol);
+			lcd_cursor(1);
 			break;
 		case 0x97: // Blink off
-			displaycontrol &= ~LCD_BLINKON;
-			lcd_command(displaycontrol);
+			lcd_blink(0);
 			break;
 		case 0x98: // Blink on
-			displaycontrol |= LCD_BLINKON;
-			lcd_command(displaycontrol);
+			lcd_blink(1);
 			break;
 		case 0x99: // scroll display left
-			lcd_command(LCD_MOVE_DISP_LEFT);
+			lcd_scroll_left();
 			break;
 		case 0x9a: //scroll display right
-			lcd_command(LCD_MOVE_DISP_RIGHT);
+			lcd_scroll_right();
 			break;
 		case 0x9b: // left to right mode
 			displaymode |= LCD_ENTRYLEFT;
-			lcd_command(displaymode);
+			lcd_setmode(displaymode);
 			break;
 		case 0x9c: // right to left mode
 			displaymode &= ~LCD_ENTRYLEFT;
-			lcd_command(displaymode);
+			lcd_setmode(displaymode);
 			break;
 		case 0x9d: // autoscroll on
 			displaymode |= LCD_ENTRYSHIFTINCREMENT;
-			lcd_command(displaymode);
+			lcd_setmode(displaymode);
 			break;
 		case 0x9e: // autoscroll off
 			displaymode &= ~LCD_ENTRYSHIFTINCREMENT;
-			lcd_command(displaymode);
+			lcd_setmode(displaymode);
 			break;
 		case 0x9f: // create custom character
 			c = usiTwiReceiveByte() & 0x7; // locations are from 0~7
@@ -370,13 +363,11 @@ void main(void)
     //int  num=134;
     //unsigned char i;
 
-	// initialize display control: display on, cursor off, blink off
-	displaycontrol = LCD_DISPLAYCONTROL | LCD_DISPLAYON | LCD_CURSOROFF | LCD_BLINKOFF;
 	// initialize display mode: Left to right, right justify
 	displaymode = LCD_ENTRYMODESET | LCD_ENTRYLEFT | LCD_ENTRYSHIFTDECREMENT;
     
     /* initialize display, cursor off */
-    lcd_init(displaycontrol);
+    lcd_init();
     
     init();
     lcd_clrscr();
