@@ -27,29 +27,9 @@ SRCS = main.c \
 	twi-lcd.c 
 
 # Default values
-FEATURE_SET_TIME ?= YES
-FEATURE_CHARACTERS ?= YES
-FEATURE_CHANGE_TWI_ADDRESS ?= YES
-FEATURE_SHOW_ADDRESS_ON_STARTUP ?= YES
-FEATURE_LOWERCASE ?= YES
-
-ifeq ($(MCU), attiny4313)
-  FEATURE_CHANGE_TWI_ADDRESS ?= YES
-  FEATURE_SHOW_ADDRESS_ON_NO_DATA ?= YES
-endif
-
-ifneq ($(DEFAULT_BRIGHTNESS), )
-  CFLAGS += -DDEFAULT_BRIGHTNESS=$(DEFAULT_BRIGHTNESS)
-endif
 
 # These will automatically be checked if they are set to YES
-SPECIAL_DEFS += DEMO \
-	FEATURE_SET_TIME \
-	FEATURE_CHARACTERS \
-	FEATURE_CHANGE_TWI_ADDRESS \
-	FEATURE_SHOW_ADDRESS_ON_STARTUP \
-	FEATURE_LOWERCASE
-	  
+SPECIAL_DEFS += 
 
 OBJS = $(SRCS:.c=.o)
 
@@ -160,13 +140,6 @@ ifeq ($(MCU), $(filter $(MCU), attiny2313 attiny4313))
   #AVRDUDE_WRITE_FUSE := -U lfuse:w:0xe2:m -U hfuse:w:0xdf:m # attiny4313 only 4MHz
 endif
 
-ifneq ($(AVRDUDE_PROGRAMMER), )
-flash: $(TARGET).hex $(TARGET).eep
-	$(AVRDUDE) $(AVRDUDE_FLAGS) -U flash:w:$(TARGET).hex -U eeprom:w:$(TARGET).eep
-
-fuse:
-	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FUSE) 
-
 %.hex: %.elf
 	@echo "[$(TARGET)] Creating flash file:" $@...
 	$(SILENT) $(OBJCOPY) -O ihex -R .eeprom $< $@
@@ -175,6 +148,14 @@ fuse:
 	@echo "[$(TARGET)] Creating eeprom file:" $@...
 	$(SILENT) $(OBJCOPY) -j .eeprom --set-section-flags=.eeprom="alloc,load" \
 	--change-section-lma .eeprom=0 -O ihex $< $@
+
+ifneq ($(AVRDUDE_PROGRAMMER), )
+flash: $(TARGET).hex $(TARGET).eep
+	$(AVRDUDE) $(AVRDUDE_FLAGS) -U flash:w:$(TARGET).hex -U eeprom:w:$(TARGET).eep
+
+fuse:
+	$(AVRDUDE) $(AVRDUDE_FLAGS) $(AVRDUDE_WRITE_FUSE) 
+
 else
 FLASH_MSG="You need to set AVRDUDE_PROGRAMMER/AVRDUDE_PORT/AVRDUDE_SPEED in ~/user.mk"
 flash:
