@@ -334,6 +334,7 @@ inline size_t LiquidCrystal::write(uint8_t value) {
   Wire.write(0xa4); // send data
   Wire.write(value);
   Wire.endTransmission();
+  return 1;
 }
 
 inline void LiquidCrystal::write_raw_data(uint8_t value) {
